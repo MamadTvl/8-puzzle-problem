@@ -226,7 +226,7 @@ const main = async () => {
     displayBoard(goalState)
     const startTime = new Date()
     /**
-     * uncomment this functions to use bfs, ids ,dls, forward_backward_search
+     * uncomment this functions to use bfs, ids ,dls, bidirectionalSearch
      * **/
     let result
     // result = bfs(startState, goalState) // problem 1
