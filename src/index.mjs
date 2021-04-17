@@ -23,86 +23,61 @@ export const displayBoard = (state) => {
     console.log("-------------")
 }
 
-const moveUp = (state) => {
+const moveUp = (state, index) => {
     let newState = state.slice()
-    const index = newState.indexOf(0)
-    if (![0, 1, 2].includes(index)) {
-        // swap values
-        let temp = newState[index - 3]
-        newState[index - 3] = newState[index]
-        newState[index] = temp
-        return newState
-    } else {
-        // can't move
-        return null
-    }
+    // swap values
+    let temp = newState[index - 3]
+    newState[index - 3] = newState[index]
+    newState[index] = temp
+    return newState
 }
 
-const moveDown = (state) => {
+const moveDown = (state, index) => {
     let newState = state.slice()
-    const index = newState.indexOf(0)
-    if (![6, 7, 8].includes(index)) {
-        // swap values
-        let temp = newState[index + 3]
-        newState[index + 3] = newState[index]
-        newState[index] = temp
-        return newState
-    } else {
-        // can't move
-        return null
-    }
+    // swap values
+    let temp = newState[index + 3]
+    newState[index + 3] = newState[index]
+    newState[index] = temp
+    return newState
 
 }
 
-const moveLeft = (state) => {
+const moveLeft = (state, index) => {
     let newState = state.slice()
-    const index = newState.indexOf(0)
-    if (![0, 3, 6].includes(index)) {
-        // swap values
-        let temp = newState[index - 1]
-        newState[index - 1] = newState[index]
-        newState[index] = temp
-        return newState
-    } else {
-        // can't move
-        return null
-    }
+    // swap values
+    let temp = newState[index - 1]
+    newState[index - 1] = newState[index]
+    newState[index] = temp
+    return newState
 }
 
-const moveRight = (state) => {
+const moveRight = (state, index) => {
     let newState = state.slice()
-    const index = newState.indexOf(0)
-    if (![2, 5, 8].includes(index)) {
-        // swap values
-        let temp = newState[index + 1]
-        newState[index + 1] = newState[index]
-        newState[index] = temp
-        return newState
-    } else {
-        // can't move
-        return null
-    }
-
+    // swap values
+    let temp = newState[index + 1]
+    newState[index + 1] = newState[index]
+    newState[index] = temp
+    return newState
 }
 
 const expandNode = (node) => {
     // return list of expanded nodes
     let expandedNodes = []
-    if (moveUp(node.state) !== null) {
-        expandedNodes.push(new Node(moveUp(node.state), node, 'up', node.depth + 1))
+    const index = node.getState().indexOf(0)
+    if (![0, 1, 2].includes(index)) {
+        expandedNodes.push(new Node(moveUp(node.state, index), node, 'up', node.depth + 1))
     }
-    if (moveDown(node.state) !== null) {
-        expandedNodes.push(new Node(moveDown(node.state), node, 'down', node.depth + 1))
+    if (![6, 7, 8].includes(index)) {
+        expandedNodes.push(new Node(moveDown(node.state, index), node, 'down', node.depth + 1))
     }
-    if (moveLeft(node.state) !== null) {
-        expandedNodes.push(new Node(moveLeft(node.state), node, 'left', node.depth + 1))
+    if (![0, 3, 6].includes(index)) {
+        expandedNodes.push(new Node(moveLeft(node.state, index), node, 'left', node.depth + 1))
     }
-    if (moveRight(node.state) !== null) {
-        expandedNodes.push(new Node(moveRight(node.state), node, 'right', node.depth + 1))
+    if (![2, 5, 8].includes(index)) {
+        expandedNodes.push(new Node(moveRight(node.state, index), node, 'right', node.depth + 1))
     }
     return expandedNodes
 }
-
 
 const bfs = (start, goal) => {
     const nodes = [] //queue
@@ -123,11 +98,9 @@ const bfs = (start, goal) => {
             const expandedNodes = expandNode(node)
             for (const item of expandedNodes) {
                 let state = item.getState()
-                // console.log(state, 'line 124')
-                // console.log(explored, 'line 125')
                 let isExplored = false
                 for (const exploreState of explored) {
-                    if (JSON.stringify(exploreState) === JSON.stringify(state)){
+                    if (JSON.stringify(exploreState) === JSON.stringify(state)) {
                         isExplored = true
                     }
                 }
@@ -140,13 +113,90 @@ const bfs = (start, goal) => {
 
 }
 
-
-const ids = (start, goal) => {
+const dls = (start, goal, depth = 20) => {
+    const depthLimit = depth
+    console.log('depth limit: ', depthLimit)
+    let nodes = []
+    nodes.push(new Node(start, null, null, 0))
+    let count = 0
+    const explored = []
+    while (nodes.length > 0) {
+        const node = nodes.pop()
+        count++
+        console.log(`${count}: Trying state ${node.getState()} and move: ${node.operator}`)
+        explored.push(node.getState())
+        if (JSON.stringify(node.state) === JSON.stringify(goal)) {
+            console.log(`done !\nThe number of nodes visited : ${count}`)
+            console.log('States of moves are as follows:')
+            return node.pathFromStart()
+        }
+        if (node.depth < depthLimit) {
+            const expandedNodes = expandNode(node)
+            for (const item of expandedNodes) {
+                let state = item.getState()
+                let isExplored = false
+                for (const exploreState of explored) {
+                    if (JSON.stringify(exploreState) === JSON.stringify(state)) {
+                        isExplored = true
+                    }
+                }
+                if (!isExplored) {
+                    nodes = [item, ...nodes]
+                }
+            }
+        }
+    }
 
 }
 
-const forward_backward_search = (start, goal) => {
+const ids = (start, goal, depth = 50) => {
+    for (let i = 0; i < depth; i++) {
+        const result = dls(start, goal, i)
+        if (result !== undefined) {
+            return result
+        }
+    }
+}
 
+const bidirectionalSearch = (start, goal) => {
+    const forwardVisited = new Map() // set (key: state,value: moves)
+    const backwardVisited = new Map() // set (key: state,value: moves)
+    const final = {
+        moves: [],
+        stateList: [],
+    }
+    const forwardSpace = []
+    const backwardSpace = []
+    forwardSpace.push(new Node(start, null, null, 0))
+    backwardSpace.push(new Node(goal, null, null, 0))
+    while (forwardSpace.length > 0 && backwardSpace.length > 0) {
+        const forwardNode = forwardSpace.pop()
+        const backwardNode = backwardSpace.pop()
+        if (backwardVisited.get(JSON.stringify(forwardNode.state))){
+            final.moves = [...forwardNode.getMoves(), ...backwardVisited.get(JSON.stringify(backwardNode.state)).reverse()]
+            console.log(final)
+            return forwardNode.bs_pathFromStart(backwardNode)
+        }
+        if(!forwardVisited.get(JSON.stringify(forwardNode.state))){
+            if (forwardNode.operator === null){
+                forwardVisited.set(JSON.stringify(forwardNode.state), 'start')
+            } else {
+                forwardVisited.set(JSON.stringify(forwardNode.state), forwardNode.operator)
+            }
+            const expandedNodes = expandNode(forwardNode)
+            forwardSpace.push(expandedNodes)
+        }
+        if (!backwardVisited.get(JSON.stringify(backwardVisited.state))){
+            if (backwardNode.getMoves() === null){
+                backwardVisited.set(JSON.stringify(backwardNode.state), 'end')
+            } else {
+                backwardVisited.set(JSON.stringify(backwardNode.state), JSON.stringify(backwardNode.getMoves()))
+            }
+
+            const expandedNodes = expandNode(backwardNode)
+            backwardSpace.push(expandedNodes)
+        }
+    }
 }
 
 const main = async () => {
@@ -168,18 +218,25 @@ const main = async () => {
     displayBoard(goalState)
     const startTime = new Date()
     /**
-     * uncomment this functions to use bfs,ids, forward_backward_search
+     * uncomment this functions to use bfs, ids ,dls, forward_backward_search
      * **/
     let result
-    result = bfs(startState, goalState) // problem 1
+    // result = bfs(startState, goalState) // problem 1
+    // result = dls(startState, goalState)
     // result = ids(startState, goalState) // problem 2
-    // result = forward_backward_search(startState, goalState) //problem 3
-    if (result === undefined){
+    result = bidirectionalSearch(startState, goalState) //problem 3
+
+    if (result === undefined) {
         console.log('no solution found')
-    } else if (JSON.stringify(result) === JSON.stringify([null])){
+    } else if (result.length === 0) {
         console.log('start node was the goal')
     } else {
-        console.log(result)
+        let moves = ''
+        for (const move of result) {
+            moves += move
+            moves += ', '
+        }
+        console.log(moves)
         console.log(`${result.length} moves`)
     }
     const endTime = new Date()

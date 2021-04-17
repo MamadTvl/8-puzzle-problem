@@ -36,4 +36,25 @@ export class Node {
         }
         return moveList
     }
+     bs_pathFromStart = (backward) => {
+         let stateList = []
+         let moveList = []
+         let forward = this
+         while (forward.getMoves()) {
+             stateList.push(forward.getState())
+             moveList.push(forward.getMoves())
+             forward = forward.parent
+         }
+         while (backward.getMoves()) {
+             stateList.push(backward.getState().reverse())
+             moveList.push(backward.getMoves().reverse())
+             backward = backward.parent
+         }
+         stateList.reverse()
+         moveList.reverse()
+         for (const item of stateList) {
+             displayBoard(item)
+         }
+         return moveList
+     }
 }
