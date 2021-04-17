@@ -8,5 +8,8 @@
     "start": "node src/index.mjs"
   },
   "author": "MamadTvl",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "js-priority-queue": "^0.1.5"
+  }
 }

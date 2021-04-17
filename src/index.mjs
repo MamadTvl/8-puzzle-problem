@@ -1,5 +1,6 @@
 import readline from 'readline'
 import {Node} from './node.mjs'
+import PriorityQueue from 'js-priority-queue'
 
 const getInput = () => {
     const rl = readline.createInterface({
@@ -63,6 +64,7 @@ const moveRight = (state, index) => {
 const expandNode = (node) => {
     // return list of expanded nodes
     let expandedNodes = []
+    // console.log(node.getState())
     const index = node.getState().indexOf(0)
     if (![0, 1, 2].includes(index)) {
         expandedNodes.push(new Node(moveUp(node.state, index), node, 'up', node.depth + 1))
@@ -159,43 +161,49 @@ const ids = (start, goal, depth = 50) => {
 }
 
 const bidirectionalSearch = (start, goal) => {
-    const forwardVisited = new Map() // set (key: state,value: moves)
-    const backwardVisited = new Map() // set (key: state,value: moves)
-    const final = {
-        moves: [],
-        stateList: [],
-    }
-    const forwardSpace = []
-    const backwardSpace = []
-    forwardSpace.push(new Node(start, null, null, 0))
-    backwardSpace.push(new Node(goal, null, null, 0))
+    const forwardVisited = new Map() // set (key: state,value: node)
+    const backwardVisited = new Map() // set (key: state,value: node)
+    const forwardSpace = new PriorityQueue({
+        comparator: function(a, b) {
+            return a.getDepth() - b.getDepth()
+        }
+    })
+    const backwardSpace = new PriorityQueue({
+        comparator: function(a, b) {
+            return a.getDepth() - b.getDepth()
+        }
+    })
+    forwardSpace.queue(new Node(start, null, null, 0)) //start from forward
+    backwardSpace.queue(new Node(goal, null, null, 0)) //start from backward
+    let count = 0
     while (forwardSpace.length > 0 && backwardSpace.length > 0) {
-        const forwardNode = forwardSpace.pop()
-        const backwardNode = backwardSpace.pop()
-        if (backwardVisited.get(JSON.stringify(forwardNode.state))){
-            final.moves = [...forwardNode.getMoves(), ...backwardVisited.get(JSON.stringify(backwardNode.state)).reverse()]
-            console.log(final)
-            return forwardNode.bs_pathFromStart(backwardNode)
-        }
-        if(!forwardVisited.get(JSON.stringify(forwardNode.state))){
-            if (forwardNode.operator === null){
-                forwardVisited.set(JSON.stringify(forwardNode.state), 'start')
-            } else {
-                forwardVisited.set(JSON.stringify(forwardNode.state), forwardNode.operator)
-            }
-            const expandedNodes = expandNode(forwardNode)
-            forwardSpace.push(expandedNodes)
-        }
-        if (!backwardVisited.get(JSON.stringify(backwardVisited.state))){
-            if (backwardNode.getMoves() === null){
-                backwardVisited.set(JSON.stringify(backwardNode.state), 'end')
-            } else {
-                backwardVisited.set(JSON.stringify(backwardNode.state), JSON.stringify(backwardNode.getMoves()))
-            }
+        const forwardNode = forwardSpace.dequeue()
+        const backwardNode = backwardSpace.dequeue()
 
-            const expandedNodes = expandNode(backwardNode)
-            backwardSpace.push(expandedNodes)
+        console.log(`${count}: Trying forward state ${forwardNode.getState()} and move: ${forwardNode.operator}`)
+        console.log(`${count}: Trying backward state ${backwardNode.getState()} and move: ${backwardNode.operator}`)
+
+        if (backwardVisited.has(JSON.stringify(forwardNode.state))) { // save forward state in backward HashMap ? Y: we are in middle
+            return forwardNode.bs_pathFromStart(backwardVisited.get(JSON.stringify(forwardNode.state)))
         }
+
+        if (!forwardVisited.has(JSON.stringify(forwardNode.state))) { // we have not this state ?
+            forwardVisited.set(JSON.stringify(forwardNode.state), forwardNode)
+            const expandedNodes = expandNode(forwardNode)
+            for (const item of expandedNodes) {
+                forwardSpace.queue(item)
+            }
+        }
+
+        if (!backwardVisited.has(JSON.stringify(backwardNode.state))) { // we have not this state ?
+            backwardVisited.set(JSON.stringify(backwardNode.state), backwardNode)
+            const expandedNodes = expandNode(backwardNode)
+            for (const item of expandedNodes) {
+                backwardSpace.queue(item)
+            }
+        }
+
+        count++
     }
 }
 
