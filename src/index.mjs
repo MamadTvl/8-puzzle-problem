@@ -64,7 +64,6 @@ const moveRight = (state, index) => {
 const expandNode = (node) => {
     // return list of expanded nodes
     let expandedNodes = []
-    // console.log(node.getState())
     const index = node.getState().indexOf(0)
     if (![0, 1, 2].includes(index)) {
         expandedNodes.push(new Node(moveUp(node.state, index), node, 'up', node.depth + 1))
@@ -82,15 +81,23 @@ const expandNode = (node) => {
 }
 
 const bfs = (start, goal) => {
-    const nodes = [] //queue
-    nodes.push(new Node(start, null, null, 0))
+    const nodes = new PriorityQueue({
+        comparator: function (a, b) {
+            return a.getDepth() - b.getDepth()
+        }
+    })
+    nodes.queue(new Node(start, null, null, 0))
     let count = 0
-    const explored = []
+    const explored = new Map() // set (state, bool)
     while (nodes.length > 0) {
-        const node = nodes.pop()
+        const node = nodes.dequeue()
+        if (explored.has(JSON.stringify(node.getState()))) {
+            continue
+        } else {
+            explored.set(JSON.stringify(node.getState()), true)
+        }
         count++
         console.log(`Trying state ${node.state} and move: ${node.operator}`)
-        explored.push(node.getState())
         if (JSON.stringify(node.state) === JSON.stringify(goal)) {
             console.log(`done !\nThe number of nodes visited : ${count}`)
             console.log('States of moves are as follows:')
@@ -99,34 +106,32 @@ const bfs = (start, goal) => {
             // Expand the node and add all the expansions to the end of the queue
             const expandedNodes = expandNode(node)
             for (const item of expandedNodes) {
-                let state = item.getState()
-                let isExplored = false
-                for (const exploreState of explored) {
-                    if (JSON.stringify(exploreState) === JSON.stringify(state)) {
-                        isExplored = true
-                    }
-                }
-                if (!isExplored) {
-                    nodes.push(item)
-                }
+                nodes.queue(item)
             }
         }
     }
-
 }
 
 const dls = (start, goal, depth = 20) => {
     const depthLimit = depth
     console.log('depth limit: ', depthLimit)
-    let nodes = []
-    nodes.push(new Node(start, null, null, 0))
+    const nodes = new PriorityQueue({
+        comparator: function (a, b) {
+            return a.getDepth() - b.getDepth()
+        }
+    })
+    nodes.queue(new Node(start, null, null, 0))
     let count = 0
-    const explored = []
+    const explored = new Map() // set (state, bool)
     while (nodes.length > 0) {
-        const node = nodes.pop()
+        const node = nodes.dequeue()
+        if (explored.has(JSON.stringify(node.getState()))) {
+            continue
+        } else {
+            explored.set(JSON.stringify(node.getState()), true)
+        }
         count++
         console.log(`${count}: Trying state ${node.getState()} and move: ${node.operator}`)
-        explored.push(node.getState())
         if (JSON.stringify(node.state) === JSON.stringify(goal)) {
             console.log(`done !\nThe number of nodes visited : ${count}`)
             console.log('States of moves are as follows:')
@@ -135,16 +140,7 @@ const dls = (start, goal, depth = 20) => {
         if (node.depth < depthLimit) {
             const expandedNodes = expandNode(node)
             for (const item of expandedNodes) {
-                let state = item.getState()
-                let isExplored = false
-                for (const exploreState of explored) {
-                    if (JSON.stringify(exploreState) === JSON.stringify(state)) {
-                        isExplored = true
-                    }
-                }
-                if (!isExplored) {
-                    nodes = [item, ...nodes]
-                }
+                nodes.queue(item)
             }
         }
     }
@@ -164,12 +160,12 @@ const bidirectionalSearch = (start, goal) => {
     const forwardVisited = new Map() // set (key: state,value: node)
     const backwardVisited = new Map() // set (key: state,value: node)
     const forwardSpace = new PriorityQueue({
-        comparator: function(a, b) {
+        comparator: function (a, b) {
             return a.getDepth() - b.getDepth()
         }
     })
     const backwardSpace = new PriorityQueue({
-        comparator: function(a, b) {
+        comparator: function (a, b) {
             return a.getDepth() - b.getDepth()
         }
     })
@@ -229,10 +225,10 @@ const main = async () => {
      * uncomment this functions to use bfs, ids ,dls, bidirectionalSearch
      * **/
     let result
-    // result = bfs(startState, goalState) // problem 1
+    result = bfs(startState, goalState)
     // result = dls(startState, goalState)
-    // result = ids(startState, goalState) // problem 2
-    result = bidirectionalSearch(startState, goalState) //problem 3
+    // result = ids(startState, goalState)
+    // result = bidirectionalSearch(startState, goalState)
 
     if (result === undefined) {
         console.log('no solution found')
