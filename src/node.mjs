@@ -1,11 +1,12 @@
 import {displayBoard} from "./index.mjs";
 
 export class Node {
-    constructor(state, parent, operator, depth) {
-        this.state = state;
-        this.parent = parent;
-        this.operator = operator;
-        this.depth = depth;
+    constructor(state, parent, operator, depth, cost) {
+        this.state = state
+        this.parent = parent
+        this.operator = operator
+        this.depth = depth
+        this.cost = cost
     }
 
     getState = () => {

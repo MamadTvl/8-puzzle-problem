@@ -66,16 +66,16 @@ const expandNode = (node) => {
     let expandedNodes = []
     const index = node.getState().indexOf(0)
     if (![0, 1, 2].includes(index)) {
-        expandedNodes.push(new Node(moveUp(node.state, index), node, 'up', node.depth + 1))
+        expandedNodes.push(new Node(moveUp(node.state, index), node, 'up', node.depth + 1, 0))
     }
     if (![6, 7, 8].includes(index)) {
-        expandedNodes.push(new Node(moveDown(node.state, index), node, 'down', node.depth + 1))
+        expandedNodes.push(new Node(moveDown(node.state, index), node, 'down', node.depth + 1, 0))
     }
     if (![0, 3, 6].includes(index)) {
-        expandedNodes.push(new Node(moveLeft(node.state, index), node, 'left', node.depth + 1))
+        expandedNodes.push(new Node(moveLeft(node.state, index), node, 'left', node.depth + 1, 0))
     }
     if (![2, 5, 8].includes(index)) {
-        expandedNodes.push(new Node(moveRight(node.state, index), node, 'right', node.depth + 1))
+        expandedNodes.push(new Node(moveRight(node.state, index), node, 'right', node.depth + 1, 0))
     }
     return expandedNodes
 }
@@ -86,7 +86,7 @@ const bfs = (start, goal) => {
             return a.getDepth() - b.getDepth()
         }
     })
-    nodes.queue(new Node(start, null, null, 0))
+    nodes.queue(new Node(start, null, null, 0, 0))
     let count = 0
     const explored = new Map() // set (state, bool)
     while (nodes.length > 0) {
@@ -169,8 +169,8 @@ const bidirectionalSearch = (start, goal) => {
             return a.getDepth() - b.getDepth()
         }
     })
-    forwardSpace.queue(new Node(start, null, null, 0)) //start from forward
-    backwardSpace.queue(new Node(goal, null, null, 0)) //start from backward
+    forwardSpace.queue(new Node(start, null, null, 0, 0)) //start from forward
+    backwardSpace.queue(new Node(goal, null, null, 0, 0)) //start from backward
     let count = 0
     while (forwardSpace.length > 0 && backwardSpace.length > 0) {
         const forwardNode = forwardSpace.dequeue()
@@ -203,6 +203,85 @@ const bidirectionalSearch = (start, goal) => {
     }
 }
 
+/**
+ * a star functions
+ */
+
+const boardState = (state) => {
+    const newState = state.slice()
+    const temp = [
+        [0, 0, 0],
+        [0, 0, 0],
+        [0, 0, 0],
+    ]
+    let index = 0
+    for (let i = 0; i < temp.length; i++) {
+        for (let j = 0; j <temp[i].length; j++) {
+            temp[i][j] = newState[index]
+            index++
+        }
+    }
+    return temp
+}
+
+const manhattanHueristic = (node) => {
+    const finalPosition = [
+        [1, 1],
+        [0, 0],
+        [1, 0],
+        [2, 0],
+        [2, 1],
+        [2, 2],
+        [1, 2],
+        [0, 2],
+        [0, 1],
+    ]
+    const temp = boardState(node.getState())
+    let cost = node.getDepth()
+    let t
+    for (let i = 0; i < 3; i++) {
+        for (let j = 0; j < 3; j++) {
+            t = temp[i][j]
+            const [finalJ, finalI] = finalPosition[t]
+            cost += Math.abs(finalJ - j) + Math.abs(finalI - i)
+        }
+    }
+    return cost
+}
+
+const aStar = (start, goal) => {
+    const nodes = new PriorityQueue({
+        comparator: function (a, b) {
+            return manhattanHueristic(a) - manhattanHueristic(b)
+        }
+    })
+    nodes.queue(new Node(start, null, null, 0, 0))
+    let count = 0
+    const explored = new Map() // set (state, bool)
+    while (nodes.length > 0) {
+        const node = nodes.dequeue()
+        if (explored.has(JSON.stringify(node.getState()))) {
+            continue
+        } else {
+            explored.set(JSON.stringify(node.getState()), true)
+        }
+        count++
+        console.log(`Trying state ${node.state} and move: ${node.operator}`)
+        if (JSON.stringify(node.state) === JSON.stringify(goal)) {
+            console.log(`done !\nThe number of nodes visited : ${count}`)
+            console.log('States of moves are as follows:')
+            return node.pathFromStart()
+        } else {
+            // Expand the node and add all the expansions to the end of the queue
+            const expandedNodes = expandNode(node)
+            for (const item of expandedNodes) {
+                nodes.queue(item)
+            }
+        }
+    }
+}
+
+
 const main = async () => {
     console.info("enter start state in one line with split : (for blank Enter 0)")
     let startState = await getInput()
@@ -222,13 +301,14 @@ const main = async () => {
     displayBoard(goalState)
     const startTime = new Date()
     /**
-     * uncomment this functions to use bfs, ids ,dls, bidirectionalSearch
+     * uncomment this functions to use bfs, ids ,dls, bidirectionalSearch, aStar
      * **/
     let result
-    result = bfs(startState, goalState)
+    // result = bfs(startState, goalState)
     // result = dls(startState, goalState)
     // result = ids(startState, goalState)
     // result = bidirectionalSearch(startState, goalState)
+    result = aStar(startState, goalState)
 
     if (result === undefined) {
         console.log('no solution found')
